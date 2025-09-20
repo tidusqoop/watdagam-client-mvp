@@ -15,6 +15,7 @@ class GraffitiNote {
   final AuthorAlignment authorAlignment; // 작성자 정렬 방식
   final double opacity;           // 투명도
   final double cornerRadius;      // 모서리 둥글기
+  final DateTime createdAt;       // 작성 시간
 
   GraffitiNote({
     required this.id,
@@ -26,7 +27,9 @@ class GraffitiNote {
     this.authorAlignment = AuthorAlignment.center,
     this.opacity = 0.7,          // More transparent background
     this.cornerRadius = 12.0,
-  }) : author = (author?.trim().isEmpty ?? true) ? '익명' : author!.trim();
+    DateTime? createdAt,          // Allow null input for convenience
+  }) : author = (author?.trim().isEmpty ?? true) ? '익명' : author!.trim(),
+       createdAt = createdAt ?? DateTime.now();
 
   GraffitiNote copyWith({
     String? id,
@@ -38,6 +41,7 @@ class GraffitiNote {
     AuthorAlignment? authorAlignment,
     double? opacity,
     double? cornerRadius,
+    DateTime? createdAt,
   }) {
     return GraffitiNote(
       id: id ?? this.id,
@@ -49,6 +53,7 @@ class GraffitiNote {
       authorAlignment: authorAlignment ?? this.authorAlignment,
       opacity: opacity ?? this.opacity,
       cornerRadius: cornerRadius ?? this.cornerRadius,
+      createdAt: createdAt ?? this.createdAt,
     );
   }
 }
@@ -72,6 +77,9 @@ extension GraffitiNoteJson on GraffitiNote {
       authorAlignment: _stringToAlignment(json['author_alignment'] as String? ?? 'center'),
       opacity: (json['opacity'] as num?)?.toDouble() ?? 0.7,
       cornerRadius: (json['corner_radius'] as num?)?.toDouble() ?? 12.0,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : DateTime.now(),
     );
   }
 
@@ -93,6 +101,7 @@ extension GraffitiNoteJson on GraffitiNote {
       'author_alignment': _alignmentToString(authorAlignment),
       'opacity': opacity,
       'corner_radius': cornerRadius,
+      'created_at': createdAt.toIso8601String(),
     };
   }
 

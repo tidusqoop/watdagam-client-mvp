@@ -7,6 +7,7 @@ import 'data/models/graffiti_note.dart';
 import 'data/repositories/graffiti_repository.dart';
 import 'data/datasources/datasource_factory.dart';
 import 'config/app_config.dart';
+import 'utils/time_utils.dart';
 
 void main() {
   // Print configuration for debugging
@@ -476,19 +477,41 @@ class _GraffitiWallScreenState extends State<GraffitiWallScreen> {
                       ),
                     ),
                   ),
-                // 작성자 표시 (always shown, never null)
+                // 작성자와 시간 표시 (같은 라인)
                 Padding(
                   padding: const EdgeInsets.only(top: 8.0),
                   child: Align(
                     alignment: note.authorAlignment == AuthorAlignment.center
                       ? Alignment.center
                       : Alignment.centerRight,
-                    child: Text(
-                      note.author, // Always has value (never null)
-                      style: TextStyle(
-                        fontSize: 10.0,
-                        color: Colors.black54,
-                        fontWeight: FontWeight.w400,
+                    child: RichText(
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: note.author, // Always has value (never null)
+                            style: TextStyle(
+                              fontSize: 10.0,
+                              color: Colors.black54,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                          TextSpan(
+                            text: ' · ', // 중간 높이 점 구분자
+                            style: TextStyle(
+                              fontSize: 10.0,
+                              color: Colors.grey[400],
+                              fontWeight: FontWeight.w300,
+                            ),
+                          ),
+                          TextSpan(
+                            text: TimeUtils.getRelativeTime(note.createdAt),
+                            style: TextStyle(
+                              fontSize: 9.5,
+                              color: Colors.grey[500],
+                              fontWeight: FontWeight.w300,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
