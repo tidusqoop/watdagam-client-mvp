@@ -72,6 +72,30 @@ class MockGraffitiDataSource implements GraffitiDataSource {
     return note;
   }
 
+  /// Immediate update for drag operations - no network delay
+  /// Used for real-time UI updates during drag gestures
+  Future<GraffitiNote> updateNoteImmediate(GraffitiNote note) async {
+    _cachedNotes ??= await getAllNotes();
+
+    final index = _cachedNotes!.indexWhere((n) => n.id == note.id);
+    if (index == -1) {
+      throw Exception('Note with id ${note.id} not found');
+    }
+
+    _cachedNotes![index] = note;
+    return note;
+  }
+
+  /// Update note in cache only (synchronous for immediate UI updates)
+  void updateNoteInCacheOnly(GraffitiNote note) {
+    if (_cachedNotes == null) return;
+
+    final index = _cachedNotes!.indexWhere((n) => n.id == note.id);
+    if (index != -1) {
+      _cachedNotes![index] = note;
+    }
+  }
+
   @override
   Future<void> deleteNote(String id) async {
     // Simulate network delay

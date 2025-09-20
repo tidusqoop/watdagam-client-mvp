@@ -120,8 +120,18 @@ class GridPainter extends CustomPainter {
   bool shouldRepaint(CustomPainter oldDelegate) => false;
 }
 
-// Unified drag handler with coordinate system integration
-class UnifiedDragHandler {
+// Optimized drag handler with immediate UI updates and batched persistence
+class OptimizedDragHandler {
+  Timer? _updateTimer;
+  GraffitiNote? _pendingUpdate;
+  final Function(GraffitiNote) onLocalUpdate;
+  final Function(GraffitiNote) onRepositoryUpdate;
+  
+  OptimizedDragHandler({
+    required this.onLocalUpdate,
+    required this.onRepositoryUpdate,
+  });
+
   static Offset calculatePreciseWorldDelta(
     DragUpdateDetails details,
     TransformationController controller,
@@ -130,6 +140,43 @@ class UnifiedDragHandler {
     // details.delta는 이미 월드 좌표계의 델타임
     // 추가 변환 불필요!
     return details.delta;
+  }
+
+  void handleDrag(GraffitiNote note, Offset newPosition) {
+    // 1. 즉시 로컬 상태 업데이트 (UI 반응성 확보)
+    final updatedNote = note.copyWith(position: newPosition);
+    onLocalUpdate(updatedNote);
+    
+    // 2. 배치 업데이트 스케줄링 (성능 최적화)
+    _scheduleRepositoryUpdate(updatedNote);
+  }
+  
+  void _scheduleRepositoryUpdate(GraffitiNote note) {
+    // 기존 타이머 취소 (마지막 위치만 저장)
+    _updateTimer?.cancel();
+    _pendingUpdate = note;
+    
+    // 200ms 후 배치 업데이트
+    _updateTimer = Timer(const Duration(milliseconds: 200), () {
+      if (_pendingUpdate != null) {
+        onRepositoryUpdate(_pendingUpdate!);
+        _pendingUpdate = null;
+      }
+    });
+  }
+
+  void dispose() {
+    _updateTimer?.cancel();
+  }
+}
+
+// Unified drag handler with coordinate system integration (legacy support)
+class UnifiedDragHandler {
+  static Offset calculatePreciseWorldDelta(
+    DragUpdateDetails details,
+    TransformationController controller,
+  ) {
+    return OptimizedDragHandler.calculatePreciseWorldDelta(details, controller);
   }
 }
 
@@ -200,6 +247,9 @@ class _GraffitiWallScreenState extends State<GraffitiWallScreen> {
   // Enhanced transformation controller
   late final CorrectTransformationController _transformationController;
 
+  // Optimized drag handler
+  late final OptimizedDragHandler _dragHandler;
+
   // Repository-based data management
   List<GraffitiNote> notes = [];
   bool isLoading = true;
@@ -209,6 +259,13 @@ class _GraffitiWallScreenState extends State<GraffitiWallScreen> {
   void initState() {
     super.initState();
     _transformationController = CorrectTransformationController();
+    
+    // Initialize optimized drag handler
+    _dragHandler = OptimizedDragHandler(
+      onLocalUpdate: _updateNoteLocally,
+      onRepositoryUpdate: _updateNoteInRepository,
+    );
+    
     _loadNotes();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -223,6 +280,7 @@ class _GraffitiWallScreenState extends State<GraffitiWallScreen> {
   @override
   void dispose() {
     _transformationController.dispose();
+    _dragHandler.dispose();
     super.dispose();
   }
 
@@ -269,20 +327,35 @@ class _GraffitiWallScreenState extends State<GraffitiWallScreen> {
     }
   }
 
-  /// Update note through repository
+  /// Update note locally for immediate UI response
+  void _updateNoteLocally(GraffitiNote note) {
+    setState(() {
+      final index = notes.indexWhere((n) => n.id == note.id);
+      if (index != -1) {
+        notes[index] = note;
+      }
+    });
+
+    // Also update repository cache immediately for consistency
+    widget.repository.updateNoteInCacheOnly(note);
+  }
+
+  /// Update note through repository (background persistence)
   Future<void> _updateNoteInRepository(GraffitiNote note) async {
     try {
-      final updatedNote = await widget.repository.updateNote(note);
-      setState(() {
-        final index = notes.indexWhere((n) => n.id == note.id);
-        if (index != -1) {
-          notes[index] = updatedNote;
-        }
-      });
+      // Use optimized repository method that handles immediate cache updates
+      await widget.repository.updateNotePositionOptimized(note.id, note.position);
+      
+      if (AppConfig.enableDebugLogging) {
+        print('Note ${note.id} position updated in repository');
+      }
     } catch (e) {
       if (AppConfig.enableDebugLogging) {
-        print('Error updating note: $e');
+        print('Error updating note in repository: $e');
       }
+      
+      // On error, we don't need to revert local state since it's already correct
+      // The user can continue dragging and the next batch update will retry
     }
   }
 
@@ -418,9 +491,9 @@ class _GraffitiWallScreenState extends State<GraffitiWallScreen> {
       left: note.position.dx,
       top: note.position.dy,
       child: GestureDetector(
-        onPanUpdate: (details) async {
-          // Use unified drag handler
-          final Offset worldDelta = UnifiedDragHandler.calculatePreciseWorldDelta(
+        onPanUpdate: (details) {
+          // Use optimized drag handler for precise world coordinate calculation
+          final Offset worldDelta = OptimizedDragHandler.calculatePreciseWorldDelta(
             details,
             _transformationController,
           );
@@ -431,12 +504,10 @@ class _GraffitiWallScreenState extends State<GraffitiWallScreen> {
           final double newY = (note.position.dy + worldDelta.dy)
               .clamp(0.0, CanvasConfig.CANVAS_HEIGHT - note.size.height);
 
-          // Create updated note and update through repository
-          final updatedNote = note.copyWith(
-            position: Offset(newX, newY),
-          );
+          final Offset newPosition = Offset(newX, newY);
 
-          await _updateNoteInRepository(updatedNote);
+          // Use optimized drag handler for immediate UI update + batched persistence
+          _dragHandler.handleDrag(note, newPosition);
         },
         child: DottedBorder(
           dashPattern: [8, 6],  // Longer dashes for better visibility

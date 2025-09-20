@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/graffiti_note.dart';
 import '../datasources/graffiti_datasource.dart';
+import '../datasources/mock_graffiti_datasource.dart';
 
 /// Repository for managing graffiti notes data
 /// Acts as a single source of truth and abstracts the data source implementation
@@ -129,6 +130,41 @@ class GraffitiRepository {
 
     final updatedNote = note.copyWith(position: newPosition);
     return await updateNote(updatedNote);
+  }
+
+  /// Optimized drag update: immediate cache update + optional delayed persistence
+  Future<GraffitiNote> updateNotePositionOptimized(String id, Offset newPosition) async {
+    final note = await getNoteById(id);
+    if (note == null) {
+      throw ArgumentError('Note with id $id not found');
+    }
+
+    final updatedNote = note.copyWith(position: newPosition);
+
+    // Try immediate update if datasource supports it
+    try {
+      if (_dataSource is dynamic && 
+          (_dataSource as dynamic).updateNoteImmediate != null) {
+        return await (_dataSource as dynamic).updateNoteImmediate(updatedNote);
+      }
+    } catch (e) {
+      // Fallback to regular update if immediate update fails
+      print('Immediate update failed, falling back to regular update: $e');
+    }
+
+    return await updateNote(updatedNote);
+  }
+
+  /// Synchronous cache-only update for immediate UI response
+  void updateNoteInCacheOnly(GraffitiNote note) {
+    try {
+      if (_dataSource is dynamic && 
+          (_dataSource as dynamic).updateNoteInCacheOnly != null) {
+        (_dataSource as dynamic).updateNoteInCacheOnly(note);
+      }
+    } catch (e) {
+      print('Cache-only update failed: $e');
+    }
   }
 
   /// Business logic: Update note size (for resize operations)
