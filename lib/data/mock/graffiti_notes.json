@@ -1,0 +1,90 @@
+{
+  "version": "1.0",
+  "graffiti_notes": [
+    {
+      "id": "1",
+      "content": "이우상 왔다감",
+      "background_color": "#FFC1CC",
+      "position": {
+        "x": 1200.0,
+        "y": 1800.0
+      },
+      "size": {
+        "width": 120.0,
+        "height": 70.0
+      },
+      "author": "리루",
+      "author_alignment": "center",
+      "opacity": 0.7,
+      "corner_radius": 12.0
+    },
+    {
+      "id": "2",
+      "content": "😊 이종수\n딸바보",
+      "background_color": "#FFD1DC",
+      "position": {
+        "x": 1400.0,
+        "y": 1900.0
+      },
+      "size": {
+        "width": 150.0,
+        "height": 100.0
+      },
+      "author": "리종숴이",
+      "author_alignment": "center",
+      "opacity": 0.7,
+      "corner_radius": 12.0
+    },
+    {
+      "id": "3",
+      "content": "❤️ 여행자일씨",
+      "background_color": "#FFE5B4",
+      "position": {
+        "x": 1300.0,
+        "y": 2100.0
+      },
+      "size": {
+        "width": 130.0,
+        "height": 80.0
+      },
+      "author": "익명",
+      "author_alignment": "center",
+      "opacity": 0.7,
+      "corner_radius": 12.0
+    },
+    {
+      "id": "4",
+      "content": "🎪 안녕하세요 이층빙수입니다",
+      "background_color": "#B4E5D1",
+      "position": {
+        "x": 1600.0,
+        "y": 2000.0
+      },
+      "size": {
+        "width": 200.0,
+        "height": 90.0
+      },
+      "author": "이하쿤",
+      "author_alignment": "center",
+      "opacity": 0.7,
+      "corner_radius": 12.0
+    },
+    {
+      "id": "5",
+      "content": "🏠 뭐먹고사냐이제\n큰일났다",
+      "background_color": "#FFD1DC",
+      "position": {
+        "x": 1500.0,
+        "y": 2200.0
+      },
+      "size": {
+        "width": 180.0,
+        "height": 110.0
+      },
+      "author": "야생동물",
+      "author_alignment": "right",
+      "opacity": 0.7,
+      "corner_radius": 12.0
+    }
+  ]
+}

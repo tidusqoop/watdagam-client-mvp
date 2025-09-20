@@ -1,14 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'dart:async';
-import 'dart:math' as math;
+
+// New architecture imports
+import 'data/models/graffiti_note.dart';
+import 'data/repositories/graffiti_repository.dart';
+import 'data/datasources/datasource_factory.dart';
+import 'config/app_config.dart';
 
 void main() {
-  runApp(const WatdagamApp());
+  // Print configuration for debugging
+  AppConfig.printConfig();
+
+  // Create repository with appropriate data source
+  final repository = GraffitiRepository(
+    DataSourceFactory.createGraffitiDataSource()
+  );
+
+  runApp(WatdagamApp(repository: repository));
 }
 
 class WatdagamApp extends StatelessWidget {
-  const WatdagamApp({super.key});
+  final GraffitiRepository repository;
+
+  const WatdagamApp({super.key, required this.repository});
 
   @override
   Widget build(BuildContext context) {
@@ -18,38 +33,9 @@ class WatdagamApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.pink),
         useMaterial3: true,
       ),
-      home: const GraffitiWallScreen(),
+      home: GraffitiWallScreen(repository: repository),
     );
   }
-}
-
-class GraffitiNote {
-  final String id;
-  final String content;           // 이모지 포함 통합 텍스트
-  final Color backgroundColor;    // 파스텔 배경색
-  final Offset position;
-  final Size size;
-  final String author;            // Always has value (never null), 빈칸일 경우 "익명"
-  final AuthorAlignment authorAlignment; // 작성자 정렬 방식
-  final double opacity;           // 투명도
-  final double cornerRadius;      // 모서리 둥글기
-
-  GraffitiNote({
-    required this.id,
-    required this.content,
-    required this.backgroundColor,
-    required this.position,
-    required this.size,
-    String? author,               // Allow null input for convenience
-    this.authorAlignment = AuthorAlignment.center,
-    this.opacity = 0.7,          // More transparent background
-    this.cornerRadius = 12.0,
-  }) : author = (author?.trim().isEmpty ?? true) ? '익명' : author!.trim();
-}
-
-enum AuthorAlignment {
-  center,    // 중앙 정렬
-  right,     // 오른쪽 정렬
 }
 
 // 확장된 캔버스 설정
@@ -68,26 +54,26 @@ class CorrectTransformationController extends TransformationController {
   void precisePanAndZoom(double newScale, Offset worldCenter, Size screenSize) {
     // 1. 스케일 제한 적용
     final double clampedScale = newScale.clamp(0.3, 2.0);
-    
+
     // 2. 화면 중심 계산
     final Offset screenCenter = Offset(screenSize.width / 2, screenSize.height / 2);
-    
+
     // 3. 정확한 변환 매트릭스 구성 (translate 먼저, scale 나중)
     final Matrix4 newTransform = Matrix4.identity()
-      ..translate(screenCenter.dx - worldCenter.dx * clampedScale, 
+      ..translate(screenCenter.dx - worldCenter.dx * clampedScale,
                   screenCenter.dy - worldCenter.dy * clampedScale)
       ..scale(clampedScale);
-    
+
     value = newTransform;
     currentZoomLevel.value = clampedScale;
     showZoomIndicatorTemporary();
   }
-  
+
   void resetToCenter(Size screenSize, Size canvasSize) {
     // 정확한 중앙 위치 계산
     final double centerTranslateX = (screenSize.width - canvasSize.width) / 2;
     final double centerTranslateY = (screenSize.height - canvasSize.height) / 2;
-    
+
     value = Matrix4.identity()..translate(centerTranslateX, centerTranslateY);
     currentZoomLevel.value = 1.0;
   }
@@ -182,7 +168,9 @@ class ZoomIndicator extends StatelessWidget {
 }
 
 class GraffitiWallScreen extends StatefulWidget {
-  const GraffitiWallScreen({super.key});
+  final GraffitiRepository repository;
+
+  const GraffitiWallScreen({super.key, required this.repository});
 
   @override
   State<GraffitiWallScreen> createState() => _GraffitiWallScreenState();
@@ -211,60 +199,21 @@ class _GraffitiWallScreenState extends State<GraffitiWallScreen> {
   // Enhanced transformation controller
   late final CorrectTransformationController _transformationController;
 
-  List<GraffitiNote> notes = [
-    GraffitiNote(
-      id: '1',
-      content: '감기라하자',
-      backgroundColor: Color(0xFFFFC1CC),
-      position: const Offset(50, 200),
-      size: const Size(80, 60),
-      author: null, // Will become "익명"
-    ),
-    GraffitiNote(
-      id: '2',
-      content: '😊 스케치\n감기라하자',
-      backgroundColor: Color(0xFFFFD1DC),
-      position: const Offset(150, 250),
-      size: const Size(180, 100),
-      author: '스케치',
-      authorAlignment: AuthorAlignment.center,
-    ),
-    GraffitiNote(
-      id: '3',
-      content: '❤️ 여행자일씨',
-      backgroundColor: Color(0xFFFFE5B4),
-      position: const Offset(50, 420),
-      size: const Size(100, 80),
-      author: '', // Will become "익명"
-    ),
-    GraffitiNote(
-      id: '4',
-      content: '🎪 안녕하세요',
-      backgroundColor: Color(0xFFB4E5D1),
-      position: const Offset(300, 380),
-      size: const Size(120, 80),
-      author: null, // Will become "익명"
-    ),
-    GraffitiNote(
-      id: '5',
-      content: '🏠 집콕 스케치\n집콕가',
-      backgroundColor: Color(0xFFFFD1DC),
-      position: const Offset(200, 500),
-      size: const Size(200, 120),
-      author: '멍멍가',
-      authorAlignment: AuthorAlignment.right,
-    ),
-  ];
+  // Repository-based data management
+  List<GraffitiNote> notes = [];
+  bool isLoading = true;
+  String? errorMessage;
 
   @override
   void initState() {
     super.initState();
     _transformationController = CorrectTransformationController();
+    _loadNotes();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final screenSize = MediaQuery.of(context).size;
       final canvasSize = Size(CanvasConfig.CANVAS_WIDTH, CanvasConfig.CANVAS_HEIGHT);
-      
+
       // 정확한 중앙 정렬
       _transformationController.resetToCenter(screenSize, canvasSize);
     });
@@ -274,6 +223,66 @@ class _GraffitiWallScreenState extends State<GraffitiWallScreen> {
   void dispose() {
     _transformationController.dispose();
     super.dispose();
+  }
+
+  /// Load notes from repository
+  Future<void> _loadNotes() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+
+    try {
+      final loadedNotes = await widget.repository.getNotes();
+      setState(() {
+        notes = loadedNotes;
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        errorMessage = 'Failed to load notes: $e';
+        isLoading = false;
+      });
+
+      if (AppConfig.enableDebugLogging) {
+        print('Error loading notes: $e');
+      }
+    }
+  }
+
+  /// Add new note through repository
+  Future<void> _addNoteToRepository(GraffitiNote note) async {
+    try {
+      final addedNote = await widget.repository.addNote(note);
+      setState(() {
+        notes.add(addedNote);
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to add note: $e')),
+      );
+
+      if (AppConfig.enableDebugLogging) {
+        print('Error adding note: $e');
+      }
+    }
+  }
+
+  /// Update note through repository
+  Future<void> _updateNoteInRepository(GraffitiNote note) async {
+    try {
+      final updatedNote = await widget.repository.updateNote(note);
+      setState(() {
+        final index = notes.indexWhere((n) => n.id == note.id);
+        if (index != -1) {
+          notes[index] = updatedNote;
+        }
+      });
+    } catch (e) {
+      if (AppConfig.enableDebugLogging) {
+        print('Error updating note: $e');
+      }
+    }
   }
 
   // Calculate darker border color from background color
@@ -293,11 +302,37 @@ class _GraffitiWallScreenState extends State<GraffitiWallScreen> {
         backgroundColor: Colors.white,
         elevation: 1,
         leading: const Icon(Icons.arrow_back, color: Colors.black),
-        title: const Text(
-          '낙서집・2명 참여 중',
-          style: TextStyle(color: Colors.black, fontSize: 16),
+        title: Text(
+          '낙서집・${notes.length}개 낙서',
+          style: const TextStyle(color: Colors.black, fontSize: 16),
         ),
         actions: [
+          // Debug info button (development only)
+          if (AppConfig.isDevelopment)
+            IconButton(
+              icon: Icon(Icons.info_outline, color: Colors.grey),
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: Text('Debug Info'),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: AppConfig.summary.entries
+                          .map((e) => Text('${e.key}: ${e.value}'))
+                          .toList(),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text('Close'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
           IconButton(
             icon: const Icon(Icons.more_vert, color: Colors.black),
             onPressed: () {},
@@ -306,23 +341,44 @@ class _GraffitiWallScreenState extends State<GraffitiWallScreen> {
       ),
       body: Stack(
         children: [
-          // 확장된 캔버스 영역
-          InteractiveViewer(
-            transformationController: _transformationController,
-            constrained: false,
-            minScale: 0.3,
-            maxScale: 2.0,
-            child: Container(
-              width: CanvasConfig.CANVAS_WIDTH,
-              height: CanvasConfig.CANVAS_HEIGHT,
-              child: CustomPaint(
-                painter: GridPainter(),
-                child: Stack(
-                  children: notes.map((note) => _buildGraffitiNote(note)).toList(),
+          // Loading indicator
+          if (isLoading)
+            const Center(child: CircularProgressIndicator()),
+
+          // Error message
+          if (errorMessage != null)
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(errorMessage!),
+                  ElevatedButton(
+                    onPressed: _loadNotes,
+                    child: Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
+
+          // Main canvas area
+          if (!isLoading && errorMessage == null)
+            InteractiveViewer(
+              transformationController: _transformationController,
+              constrained: false,
+              minScale: 0.3,
+              maxScale: 2.0,
+              child: Container(
+                width: CanvasConfig.CANVAS_WIDTH,
+                height: CanvasConfig.CANVAS_HEIGHT,
+                child: CustomPaint(
+                  painter: GridPainter(),
+                  child: Stack(
+                    children: notes.map((note) => _buildGraffitiNote(note)).toList(),
+                  ),
                 ),
               ),
             ),
-          ),
+
           // Zoom level indicator (top-right corner)
           Positioned(
             top: 20,
@@ -342,13 +398,15 @@ class _GraffitiWallScreenState extends State<GraffitiWallScreen> {
               },
             ),
           ),
+
           // Bottom toolbar
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: _buildBottomToolbar(),
-          ),
+          if (!isLoading && errorMessage == null)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: _buildBottomToolbar(),
+            ),
         ],
       ),
     );
@@ -359,36 +417,25 @@ class _GraffitiWallScreenState extends State<GraffitiWallScreen> {
       left: note.position.dx,
       top: note.position.dy,
       child: GestureDetector(
-        onPanUpdate: (details) {
-          setState(() {
-            // Use unified drag handler
-            final Offset worldDelta = UnifiedDragHandler.calculatePreciseWorldDelta(
-              details,
-              _transformationController,
-            );
+        onPanUpdate: (details) async {
+          // Use unified drag handler
+          final Offset worldDelta = UnifiedDragHandler.calculatePreciseWorldDelta(
+            details,
+            _transformationController,
+          );
 
-            // 새로운 위치 계산 (캔버스 경계 체크)
-            final double newX = (note.position.dx + worldDelta.dx)
-                .clamp(0.0, CanvasConfig.CANVAS_WIDTH - note.size.width);
-            final double newY = (note.position.dy + worldDelta.dy)
-                .clamp(0.0, CanvasConfig.CANVAS_HEIGHT - note.size.height);
+          // 새로운 위치 계산 (캔버스 경계 체크)
+          final double newX = (note.position.dx + worldDelta.dx)
+              .clamp(0.0, CanvasConfig.CANVAS_WIDTH - note.size.width);
+          final double newY = (note.position.dy + worldDelta.dy)
+              .clamp(0.0, CanvasConfig.CANVAS_HEIGHT - note.size.height);
 
-            // notes 리스트에서 해당 노트 찾아서 위치 업데이트
-            final int index = notes.indexWhere((n) => n.id == note.id);
-            if (index != -1) {
-              notes[index] = GraffitiNote(
-                id: note.id,
-                content: note.content,
-                backgroundColor: note.backgroundColor,
-                position: Offset(newX, newY),
-                size: note.size,
-                author: note.author,
-                authorAlignment: note.authorAlignment,
-                opacity: note.opacity,
-                cornerRadius: note.cornerRadius,
-              );
-            }
-          });
+          // Create updated note and update through repository
+          final updatedNote = note.copyWith(
+            position: Offset(newX, newY),
+          );
+
+          await _updateNoteInRepository(updatedNote);
         },
         child: DottedBorder(
           dashPattern: [8, 6],  // Longer dashes for better visibility
@@ -466,7 +513,7 @@ class _GraffitiWallScreenState extends State<GraffitiWallScreen> {
           _buildToolButton(Icons.zoom_in, Colors.black, _zoomIn),         // 확대
           _buildToolButton(Icons.zoom_out, Colors.black, _zoomOut),       // 축소
           _buildToolButton(Icons.pan_tool, Colors.black, _panMode),       // 이동 모드
-          _buildToolButton(Icons.palette, Colors.black, _colorPicker),    // 색상 선택
+          _buildToolButton(Icons.refresh, Colors.black, _refreshNotes),   // 새로고침
         ],
       ),
     );
@@ -480,26 +527,26 @@ class _GraffitiWallScreenState extends State<GraffitiWallScreen> {
         return _AddGraffitiDialog(
           colors: graffitiColors,
           quickEmojis: quickEmojis,
-          onAdd: (String content, Color color, String? author, AuthorAlignment alignment) {
-            setState(() {
-              // 현재 뷰포트 중앙에 새 낙서 추가
-              final currentTransform = _transformationController.value;
-              final screenSize = MediaQuery.of(context).size;
-              final viewportCenter = Offset(
-                (-currentTransform.getTranslation().x + screenSize.width / 2),
-                (-currentTransform.getTranslation().y + screenSize.height / 2),
-              );
+          onAdd: (String content, Color color, String? author, AuthorAlignment alignment) async {
+            // 현재 뷰포트 중앙에 새 낙서 추가
+            final currentTransform = _transformationController.value;
+            final screenSize = MediaQuery.of(context).size;
+            final viewportCenter = Offset(
+              (-currentTransform.getTranslation().x + screenSize.width / 2),
+              (-currentTransform.getTranslation().y + screenSize.height / 2),
+            );
 
-              notes.add(GraffitiNote(
-                id: DateTime.now().millisecondsSinceEpoch.toString(),
-                content: content,
-                backgroundColor: color,
-                position: viewportCenter,
-                size: Size(140, 100),        // 기본 크기
-                author: author,              // Will auto-convert to "익명" if null/empty
-                authorAlignment: alignment,
-              ));
-            });
+            final newNote = GraffitiNote(
+              id: DateTime.now().millisecondsSinceEpoch.toString(),
+              content: content,
+              backgroundColor: color,
+              position: viewportCenter,
+              size: Size(140, 100),        // 기본 크기
+              author: author,              // Will auto-convert to "익명" if null/empty
+              authorAlignment: alignment,
+            );
+
+            await _addNoteToRepository(newNote);
           },
         );
       },
@@ -509,21 +556,21 @@ class _GraffitiWallScreenState extends State<GraffitiWallScreen> {
   void _zoomIn() {
     final currentScale = _transformationController.currentZoomLevel.value;
     final newScale = (currentScale * 1.2).clamp(0.3, 2.0);
-    
+
     // 현재 월드 중심점 유지
     final worldCenter = _getCurrentWorldCenter();
     final screenSize = MediaQuery.of(context).size;
-    
+
     _transformationController.precisePanAndZoom(newScale, worldCenter, screenSize);
   }
 
   void _zoomOut() {
     final currentScale = _transformationController.currentZoomLevel.value;
     final newScale = (currentScale / 1.2).clamp(0.3, 2.0);
-    
+
     final worldCenter = _getCurrentWorldCenter();
     final screenSize = MediaQuery.of(context).size;
-    
+
     _transformationController.precisePanAndZoom(newScale, worldCenter, screenSize);
   }
 
@@ -531,11 +578,11 @@ class _GraffitiWallScreenState extends State<GraffitiWallScreen> {
     final transform = _transformationController.value;
     final screenSize = MediaQuery.of(context).size;
     final screenCenter = Offset(screenSize.width / 2, screenSize.height / 2);
-    
+
     // 화면 중심의 월드 좌표 계산
     final scale = _transformationController.currentZoomLevel.value;
     final translation = transform.getTranslation();
-    
+
     return Offset(
       (screenCenter.dx - translation.x) / scale,
       (screenCenter.dy - translation.y) / scale,
@@ -546,7 +593,7 @@ class _GraffitiWallScreenState extends State<GraffitiWallScreen> {
     // 캔버스 중앙으로 정확한 리셋
     final screenSize = MediaQuery.of(context).size;
     final canvasSize = Size(CanvasConfig.CANVAS_WIDTH, CanvasConfig.CANVAS_HEIGHT);
-    
+
     _transformationController.resetToCenter(screenSize, canvasSize);
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -557,12 +604,12 @@ class _GraffitiWallScreenState extends State<GraffitiWallScreen> {
     );
   }
 
-  void _colorPicker() {
-    // 색상 팔레트 표시를 위한 간단한 스낵바
+  void _refreshNotes() async {
+    await _loadNotes();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('색상은 낙서 추가 시 선택할 수 있습니다'),
-        duration: Duration(seconds: 2),
+        content: Text('노트 새로고침 완료'),
+        duration: Duration(seconds: 1),
       ),
     );
   }
