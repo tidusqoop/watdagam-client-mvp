@@ -225,18 +225,19 @@ class GraffitiWallScreen extends StatefulWidget {
 }
 
 class _GraffitiWallScreenState extends State<GraffitiWallScreen> {
-  // 파스텔 색상 팔레트 (샘플 기반 개선)
+  // 파스텔 색상 팔레트 (밝은 색 우선 정렬)
   final List<Color> graffitiColors = [
-    Color(0xFFFFC1CC), // 부드러운 핑크
-    Color(0xFFFFE5B4), // 크림 옐로우
-    Color(0xFFB4E5D1), // 민트 그린
-    Color(0xFFD4C5F9), // 라벤더 퍼플
-    Color(0xFFFFD1DC), // 베이비 핑크
+    Color(0xFFFFFFF8), // 따뜻한 화이트 (새로 추가)
     Color(0xFFF0F8E8), // 소프트 그린
-    Color(0xFFFFF2CC), // 바닐라
     Color(0xFFE6F3FF), // 베이비 블루
+    Color(0xFFFFF2CC), // 바닐라
+    Color(0xFFFFE5B4), // 크림 옐로우
     Color(0xFFF5E6FF), // 라이트 퍼플
     Color(0xFFFFE6F0), // 로즈 핑크
+    Color(0xFFB4E5D1), // 민트 그린
+    Color(0xFFFFD1DC), // 베이비 핑크
+    Color(0xFFD4C5F9), // 라벤더 퍼플
+    Color(0xFFFFC1CC), // 부드러운 핑크 (마지막으로 이동)
   ];
 
   // 빠른 이모지 접근 (선택사항)
@@ -751,7 +752,7 @@ class _AddGraffitiDialog extends StatefulWidget {
 class _AddGraffitiDialogState extends State<_AddGraffitiDialog> {
   final TextEditingController _contentController = TextEditingController();
   final TextEditingController _authorController = TextEditingController();
-  Color _selectedColor = Color(0xFFFFC1CC);
+  Color _selectedColor = Color(0xFFFFFFF8); // 기본값을 따뜻한 화이트로 변경
   AuthorAlignment _authorAlignment = AuthorAlignment.center;
 
   @override
@@ -763,6 +764,7 @@ class _AddGraffitiDialogState extends State<_AddGraffitiDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
+      backgroundColor: Colors.white, // 명시적으로 흰색 배경 설정
       title: Text('새 낙서 추가'),
       content: SingleChildScrollView(
         child: Column(
