@@ -60,7 +60,7 @@ lib/
 
 **Data Layer Pattern**: 
 - Repository pattern with datasource abstraction
-- Mock datasource for development (uses `lib/data/mock/graffiti_notes.json`)
+- Mock datasource for development (uses `lib/features/graffiti_board/data/mock/graffiti_notes.json`)
 - API datasource ready for backend integration
 - Environment-based configuration in `AppConfig`
 

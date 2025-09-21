@@ -8,7 +8,7 @@ import 'graffiti_datasource.dart';
 /// Simulates API responses with realistic delays
 class MockGraffitiDataSource implements GraffitiDataSource {
   List<GraffitiNote>? _cachedNotes;
-  static const String _jsonAssetPath = 'lib/data/mock/graffiti_notes.json';
+  static const String _jsonAssetPath = 'lib/features/graffiti_board/data/mock/graffiti_notes.json';
 
   // Simulate network delay for realistic testing
   static const Duration _networkDelay = Duration(milliseconds: 500);

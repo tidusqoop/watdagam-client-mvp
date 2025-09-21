@@ -9,8 +9,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:watdagam/main.dart';
-import 'package:watdagam/data/repositories/graffiti_repository.dart';
-import 'package:watdagam/data/datasources/mock_graffiti_datasource.dart';
+import 'package:watdagam/features/graffiti_board/data/repositories/graffiti_repository.dart';
+import 'package:watdagam/features/graffiti_board/data/datasources/mock_graffiti_datasource.dart';
+import 'package:watdagam/app/app.dart';
 
 void main() {
   testWidgets('Graffiti wall loads successfully', (WidgetTester tester) async {
