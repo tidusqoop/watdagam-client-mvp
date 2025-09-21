@@ -39,4 +39,53 @@ class CoordinateUtils {
       position.dy.clamp(0.0, CanvasConstants.CANVAS_HEIGHT - noteSize.height),
     );
   }
+
+  /// Convert world coordinates to screen coordinates
+  static Offset worldToScreen(
+    Offset worldPosition,
+    TransformationController controller,
+  ) {
+    final transform = controller.value;
+    final scale = transform.getMaxScaleOnAxis();
+    final translation = transform.getTranslation();
+    
+    return Offset(
+      worldPosition.dx * scale + translation.x,
+      worldPosition.dy * scale + translation.y,
+    );
+  }
+
+  /// Convert screen coordinates to world coordinates
+  static Offset screenToWorld(
+    Offset screenPosition,
+    TransformationController controller,
+  ) {
+    final transform = controller.value;
+    final scale = transform.getMaxScaleOnAxis();
+    final translation = transform.getTranslation();
+    
+    return Offset(
+      (screenPosition.dx - translation.x) / scale,
+      (screenPosition.dy - translation.y) / scale,
+    );
+  }
+
+  /// Get current viewport bounds in world coordinates
+  static Rect getViewportBounds(
+    TransformationController controller,
+    Size screenSize,
+  ) {
+    final topLeft = screenToWorld(Offset.zero, controller);
+    final bottomRight = screenToWorld(
+      Offset(screenSize.width, screenSize.height),
+      controller,
+    );
+    
+    return Rect.fromLTRB(
+      topLeft.dx,
+      topLeft.dy,
+      bottomRight.dx,
+      bottomRight.dy,
+    );
+  }
 }
