@@ -191,6 +191,28 @@ class WallMetadata extends ValueObject {
     return copyWith(ownerId: null);
   }
 
+  /// Creates a WallMetadata from JSON map
+  factory WallMetadata.fromJson(Map<String, dynamic> json) {
+    return WallMetadata(
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      maxCapacity: json['maxCapacity'] as int,
+      status: WallStatus.fromString(json['status'] as String),
+      ownerId: json['ownerId'] as String?,
+      graffitiCount: json['graffitiCount'] as int,
+    );
+  }
+
+  /// Converts WallMetadata to JSON map
+  Map<String, dynamic> toJson() {
+    return {
+      'createdAt': createdAt.toIso8601String(),
+      'maxCapacity': maxCapacity,
+      'status': status.name,
+      'ownerId': ownerId,
+      'graffitiCount': graffitiCount,
+    };
+  }
+
   @override
   List<Object?> get props => [
     createdAt,

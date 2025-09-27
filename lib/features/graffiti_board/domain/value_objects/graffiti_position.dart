@@ -105,6 +105,32 @@ class GraffitiPosition extends ValueObject {
     return copyWith(zIndex: DateTime.now().millisecondsSinceEpoch);
   }
 
+  /// Creates a GraffitiPosition from JSON map
+  factory GraffitiPosition.fromJson(Map<String, dynamic> json) {
+    return GraffitiPosition(
+      offset: Offset(
+        (json['offsetX'] as num).toDouble(),
+        (json['offsetY'] as num).toDouble(),
+      ),
+      size: Size(
+        (json['sizeWidth'] as num).toDouble(),
+        (json['sizeHeight'] as num).toDouble(),
+      ),
+      zIndex: json['zIndex'] as int,
+    );
+  }
+
+  /// Converts GraffitiPosition to JSON map
+  Map<String, dynamic> toJson() {
+    return {
+      'offsetX': offset.dx,
+      'offsetY': offset.dy,
+      'sizeWidth': size.width,
+      'sizeHeight': size.height,
+      'zIndex': zIndex,
+    };
+  }
+
   @override
   List<Object?> get props => [offset, size, zIndex];
 

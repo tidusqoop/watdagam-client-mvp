@@ -49,6 +49,26 @@ class NotificationSettings extends ValueObject {
     );
   }
 
+  /// Creates a NotificationSettings from JSON map
+  factory NotificationSettings.fromJson(Map<String, dynamic> json) {
+    return NotificationSettings(
+      enablePushNotifications: json['enablePushNotifications'] as bool,
+      enableGraffitiUpdates: json['enableGraffitiUpdates'] as bool,
+      enableWallUpdates: json['enableWallUpdates'] as bool,
+      enableLocationReminders: json['enableLocationReminders'] as bool,
+    );
+  }
+
+  /// Converts NotificationSettings to JSON map
+  Map<String, dynamic> toJson() {
+    return {
+      'enablePushNotifications': enablePushNotifications,
+      'enableGraffitiUpdates': enableGraffitiUpdates,
+      'enableWallUpdates': enableWallUpdates,
+      'enableLocationReminders': enableLocationReminders,
+    };
+  }
+
   @override
   List<Object?> get props => [
     enablePushNotifications,
@@ -132,6 +152,24 @@ class UserPreferences extends ValueObject {
   /// Changes the preferred language
   UserPreferences changeLanguage(String newLanguage) {
     return copyWith(preferredLanguage: newLanguage);
+  }
+
+  /// Creates a UserPreferences from JSON map
+  factory UserPreferences.fromJson(Map<String, dynamic> json) {
+    return UserPreferences(
+      enableLocationTracking: json['enableLocationTracking'] as bool,
+      notifications: NotificationSettings.fromJson(json['notifications'] as Map<String, dynamic>),
+      preferredLanguage: json['preferredLanguage'] as String,
+    );
+  }
+
+  /// Converts UserPreferences to JSON map
+  Map<String, dynamic> toJson() {
+    return {
+      'enableLocationTracking': enableLocationTracking,
+      'notifications': notifications.toJson(),
+      'preferredLanguage': preferredLanguage,
+    };
   }
 
   @override

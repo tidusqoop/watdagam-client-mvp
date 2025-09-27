@@ -238,6 +238,26 @@ class WallPermissions extends ValueObject {
     return copyWith(blockedUserIds: updatedBlocked);
   }
 
+  /// Creates a WallPermissions from JSON map
+  factory WallPermissions.fromJson(Map<String, dynamic> json) {
+    return WallPermissions(
+      accessType: WallAccessType.fromString(json['accessType'] as String),
+      accessRadius: (json['accessRadius'] as num).toDouble(),
+      allowedUserIds: List<String>.from(json['allowedUserIds'] as List),
+      blockedUserIds: List<String>.from(json['blockedUserIds'] as List),
+    );
+  }
+
+  /// Converts WallPermissions to JSON map
+  Map<String, dynamic> toJson() {
+    return {
+      'accessType': accessType.name,
+      'accessRadius': accessRadius,
+      'allowedUserIds': allowedUserIds,
+      'blockedUserIds': blockedUserIds,
+    };
+  }
+
   @override
   List<Object?> get props => [
     accessType,

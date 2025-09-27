@@ -94,6 +94,24 @@ class WallLocation extends ValueObject {
     return copyWith(address: newAddress);
   }
 
+  /// Creates a WallLocation from JSON map
+  factory WallLocation.fromJson(Map<String, dynamic> json) {
+    return WallLocation(
+      latitude: json['latitude'] as double,
+      longitude: json['longitude'] as double,
+      address: json['address'] as String,
+    );
+  }
+
+  /// Converts WallLocation to JSON map
+  Map<String, dynamic> toJson() {
+    return {
+      'latitude': latitude,
+      'longitude': longitude,
+      'address': address,
+    };
+  }
+
   @override
   List<Object?> get props => [latitude, longitude, address];
 

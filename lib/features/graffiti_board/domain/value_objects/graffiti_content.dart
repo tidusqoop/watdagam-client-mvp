@@ -150,6 +150,27 @@ class GraffitiContent extends ValueObject {
     return copyWith(size: newSize);
   }
 
+  /// Creates a GraffitiContent from JSON map
+  factory GraffitiContent.fromJson(Map<String, dynamic> json) {
+    return GraffitiContent(
+      text: json['text'] as String,
+      imagePath: json['imagePath'] as String?,
+      size: GraffitiSize.values.firstWhere(
+        (size) => size.name == json['size'],
+        orElse: () => GraffitiSize.medium,
+      ),
+    );
+  }
+
+  /// Converts GraffitiContent to JSON map
+  Map<String, dynamic> toJson() {
+    return {
+      'text': text,
+      'imagePath': imagePath,
+      'size': size.name,
+    };
+  }
+
   @override
   List<Object?> get props => [text, imagePath, size];
 

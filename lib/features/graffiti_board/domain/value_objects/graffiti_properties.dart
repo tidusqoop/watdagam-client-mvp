@@ -151,6 +151,24 @@ class GraffitiProperties extends ValueObject {
     return updateOpacity(newOpacity);
   }
 
+  /// Creates a GraffitiProperties from JSON map
+  factory GraffitiProperties.fromJson(Map<String, dynamic> json) {
+    return GraffitiProperties(
+      position: GraffitiPosition.fromJson(json['position'] as Map<String, dynamic>),
+      backgroundColor: Color(json['backgroundColor'] as int),
+      opacity: (json['opacity'] as num).toDouble(),
+    );
+  }
+
+  /// Converts GraffitiProperties to JSON map
+  Map<String, dynamic> toJson() {
+    return {
+      'position': position.toJson(),
+      'backgroundColor': backgroundColor.value,
+      'opacity': opacity,
+    };
+  }
+
   @override
   List<Object?> get props => [position, backgroundColor, opacity];
 

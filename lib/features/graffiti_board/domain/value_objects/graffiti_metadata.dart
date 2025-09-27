@@ -101,6 +101,22 @@ class GraffitiMetadata extends ValueObject {
     return copyWith(isVisible: !isVisible);
   }
 
+  /// Creates a GraffitiMetadata from JSON map
+  factory GraffitiMetadata.fromJson(Map<String, dynamic> json) {
+    return GraffitiMetadata(
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      isVisible: json['isVisible'] as bool,
+    );
+  }
+
+  /// Converts GraffitiMetadata to JSON map
+  Map<String, dynamic> toJson() {
+    return {
+      'createdAt': createdAt.toIso8601String(),
+      'isVisible': isVisible,
+    };
+  }
+
   @override
   List<Object?> get props => [createdAt, isVisible];
 
