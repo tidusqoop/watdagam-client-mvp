@@ -713,10 +713,10 @@ class SyncService {
 ### Phase 1: Data Foundation (2-3 days)
 
 #### Day 1: Domain Layer Setup
-- [ ] Create User, Wall, GraffitiNote entities
-- [ ] Implement value objects (Location, GraffitiPosition, etc.)
-- [ ] Define repository interfaces
-- [ ] Set up domain services
+- [x] Create User, Wall, GraffitiNote entities
+- [x] Implement value objects (Location, GraffitiPosition, etc.)
+- [x] Define repository interfaces
+- [x] Set up domain services
 
 #### Day 2: Data Layer Implementation
 - [ ] Set up Isar database
