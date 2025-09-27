@@ -4,6 +4,8 @@ import 'package:isar/isar.dart';
 // Shared dependencies
 import '../shared/data/cache/cache_manager.dart';
 import '../shared/data/database/database_service.dart';
+import '../shared/domain/services/image_service.dart';
+import '../shared/data/services/image_service_impl.dart';
 
 // User management dependencies
 import '../features/user_management/data/datasources/user_data_source.dart';
@@ -22,6 +24,7 @@ import '../features/graffiti_board/data/datasources/graffiti_data_source.dart';
 import '../features/graffiti_board/data/datasources/local_graffiti_data_source.dart';
 import '../features/graffiti_board/data/repositories/graffiti_repository_impl.dart';
 import '../features/graffiti_board/domain/repositories/graffiti_repository.dart';
+import '../features/graffiti_board/domain/use_cases/create_graffiti_with_image_use_case.dart';
 
 /// Dependency injection container
 final GetIt sl = GetIt.instance;
@@ -38,6 +41,9 @@ Future<void> initializeDependencies() async {
   // Register core dependencies
   sl.registerLazySingleton<Isar>(() => isar);
   sl.registerLazySingleton<CacheManager>(() => CacheManager());
+  
+  // Register services
+  sl.registerLazySingleton<ImageService>(() => ImageServiceImpl());
 
   // Register data sources
   sl.registerLazySingleton<UserDataSource>(
@@ -80,6 +86,14 @@ Future<void> initializeDependencies() async {
     ),
   );
 
+  // Register use cases
+  sl.registerLazySingleton<CreateGraffitiWithImageUseCase>(
+    () => CreateGraffitiWithImageUseCase(
+      graffitiRepository: sl<GraffitiRepository>(),
+      imageService: sl<ImageService>(),
+    ),
+  );
+
   print('✅ Data layer dependencies initialized successfully');
 }
 
@@ -115,13 +129,19 @@ Future<void> resetDatabase() async {
   print('🔄 Database reset and reinitialized');
 }
 
-/// Extension methods for easier access to repositories
+/// Extension methods for easier access to repositories and services
 extension ServiceLocatorExtensions on GetIt {
   UserRepository get userRepository => get<UserRepository>();
   WallRepository get wallRepository => get<WallRepository>();
   GraffitiRepository get graffitiRepository => get<GraffitiRepository>();
   CacheManager get cacheManager => get<CacheManager>();
   Isar get database => get<Isar>();
+  
+  // Services
+  ImageService get imageService => get<ImageService>();
+  
+  // Use Cases
+  CreateGraffitiWithImageUseCase get createGraffitiWithImageUseCase => get<CreateGraffitiWithImageUseCase>();
 }
 
 /// Development utilities

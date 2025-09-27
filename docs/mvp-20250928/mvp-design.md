@@ -732,10 +732,10 @@ class SyncService {
 ### Phase 2: Wall Features Enhancement (4-5 days)
 
 #### Days 1-2: Enhanced Graffiti System
-- [ ] Implement size selection system
-- [ ] Add image picker and processing
-- [ ] Update graffiti creation flow
-- [ ] Enhance graffiti display logic
+- [x] Implement size selection system
+- [x] Add image picker and processing
+- [x] Update graffiti creation flow
+- [x] Enhance graffiti display logic
 
 #### Days 3-4: Wall Management
 - [ ] Implement wall discovery logic
