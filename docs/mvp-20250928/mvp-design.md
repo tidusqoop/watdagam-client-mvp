@@ -725,9 +725,9 @@ class SyncService {
 - [x] Add caching layer
 
 #### Day 3: Use Cases and Testing
-- [ ] Implement core use cases
-- [ ] Add unit tests for domain logic
-- [ ] Integration tests for repositories
+- [x] Implement core use cases
+- [x] Add unit tests for domain logic
+- [x] Integration tests for repositories
 
 ### Phase 2: Wall Features Enhancement (4-5 days)
 
