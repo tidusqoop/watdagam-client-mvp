@@ -11,12 +11,14 @@ class GraffitiCanvas extends StatefulWidget {
   final List<GraffitiNote> notes;
   final Function(GraffitiNote) onNoteUpdate;
   final EnhancedTransformationController transformationController;
+  final VoidCallback? onDoubleClick; // 새로 추가
 
   const GraffitiCanvas({
     super.key,
     required this.notes,
     required this.onNoteUpdate,
     required this.transformationController,
+    this.onDoubleClick,
   });
 
   @override
@@ -43,24 +45,27 @@ class _GraffitiCanvasState extends State<GraffitiCanvas> {
 
   @override
   Widget build(BuildContext context) {
-    return InteractiveViewer(
-      transformationController: widget.transformationController,
-      constrained: false,
-      minScale: CanvasConstants.MIN_SCALE,
-      maxScale: CanvasConstants.MAX_SCALE,
-      child: Container(
-        width: CanvasConstants.CANVAS_WIDTH,
-        height: CanvasConstants.CANVAS_HEIGHT,
-        child: CustomPaint(
-          painter: GridPainter(),
-          child: Stack(
-            children: widget.notes
-                .map((note) => GraffitiNoteWidget(
-                      note: note,
-                      dragHandler: _dragHandler,
-                      transformationController: widget.transformationController,
-                    ))
-                .toList(),
+    return GestureDetector(
+      onDoubleTap: widget.onDoubleClick,
+      child: InteractiveViewer(
+        transformationController: widget.transformationController,
+        constrained: false,
+        minScale: CanvasConstants.MIN_SCALE,
+        maxScale: CanvasConstants.MAX_SCALE,
+        child: Container(
+          width: CanvasConstants.CANVAS_WIDTH,
+          height: CanvasConstants.CANVAS_HEIGHT,
+          child: CustomPaint(
+            painter: GridPainter(),
+            child: Stack(
+              children: widget.notes
+                  .map((note) => GraffitiNoteWidget(
+                        note: note,
+                        dragHandler: _dragHandler,
+                        transformationController: widget.transformationController,
+                      ))
+                  .toList(),
+            ),
           ),
         ),
       ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../data/models/graffiti_note.dart';
+import '../../data/models/temp_graffiti_note.dart';
 import '../../data/repositories/graffiti_repository.dart';
 import '../../../../config/app_config.dart';
 import '../../../../core/constants/canvas_constants.dart';
@@ -9,6 +10,7 @@ import '../widgets/canvas/transformation_controller.dart';
 import '../widgets/zoom_indicator.dart';
 import '../widgets/bottom_toolbar.dart';
 import '../widgets/add_graffiti_dialog.dart';
+import '../widgets/relative_drag_positioning_mode.dart';
 
 class GraffitiWallScreen extends StatefulWidget {
   final GraffitiRepository repository;
@@ -27,6 +29,11 @@ class _GraffitiWallScreenState extends State<GraffitiWallScreen> {
   List<GraffitiNote> notes = [];
   bool isLoading = true;
   String? errorMessage;
+  
+  // New positioning flow state
+  TempGraffitiNote? _tempNote;
+  bool _isInPositioningMode = false;
+  bool _hideBottomToolbar = false;
 
   @override
   void initState() {
@@ -200,6 +207,16 @@ class _GraffitiWallScreenState extends State<GraffitiWallScreen> {
               notes: notes,
               onNoteUpdate: _updateNoteLocally,
               transformationController: _transformationController,
+              onDoubleClick: _handleCanvasDoubleClick,
+            ),
+
+          // Positioning mode overlay
+          if (_isInPositioningMode && _tempNote != null)
+            RelativeDragPositioningMode(
+              tempNote: _tempNote!,
+              onConfirm: _handlePositioningConfirm,
+              onCancel: _handlePositioningCancel,
+              transformationController: _transformationController,
             ),
 
           // Zoom level indicator (top-right corner)
@@ -222,8 +239,8 @@ class _GraffitiWallScreenState extends State<GraffitiWallScreen> {
             ),
           ),
 
-          // Bottom toolbar
-          if (!isLoading && errorMessage == null)
+          // Bottom toolbar (조건부 표시)
+          if (!isLoading && errorMessage == null && !_hideBottomToolbar)
             Positioned(
               bottom: 0,
               left: 0,
@@ -243,34 +260,57 @@ class _GraffitiWallScreenState extends State<GraffitiWallScreen> {
 
   // 툴바 버튼 핸들러들
   void _addGraffiti() {
+    _startGraffitiCreation();
+  }
+
+  // 캔버스 더블클릭 핸들러
+  void _handleCanvasDoubleClick() {
+    _startGraffitiCreation();
+  }
+
+  // 낙서 생성 시작 (공통 로직)
+  void _startGraffitiCreation() {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AddGraffitiDialog(
-          onAdd: (String content, Color color, String? author, AuthorAlignment alignment) async {
-            // 현재 뷰포트 중앙에 새 낙서 추가
-            final currentTransform = _transformationController.value;
-            final screenSize = MediaQuery.of(context).size;
-            final viewportCenter = Offset(
-              (-currentTransform.getTranslation().x + screenSize.width / 2),
-              (-currentTransform.getTranslation().y + screenSize.height / 2),
-            );
-
-            final newNote = GraffitiNote(
-              id: DateTime.now().millisecondsSinceEpoch.toString(),
-              content: content,
-              backgroundColor: color,
-              position: viewportCenter,
-              size: Size(140, 100),        // 기본 크기
-              author: author,              // Will auto-convert to "익명" if null/empty
-              authorAlignment: alignment,
-            );
-
-            await _addNoteToRepository(newNote);
-          },
+          onAdd: _enterPositioningMode,
         );
       },
     );
+  }
+
+  // 배치 모드 진입
+  void _enterPositioningMode(String content, Color color, String? author, AuthorAlignment alignment) {
+    final screenSize = MediaQuery.of(context).size;
+    final screenCenter = Offset(screenSize.width / 2, screenSize.height / 2);
+    final worldCenter = CoordinateUtils.screenToWorld(
+      screenCenter,
+      _transformationController,
+    );
+
+    final tempNote = TempGraffitiNote.fromDialogResult(
+      content: content,
+      backgroundColor: color,
+      author: author ?? '익명',
+      authorAlignment: alignment,
+      initialPosition: worldCenter,
+    );
+
+    setState(() {
+      _tempNote = tempNote;
+      _isInPositioningMode = true;
+      _hideBottomToolbar = true; // 하단바 숨김
+    });
+  }
+
+  // 배치 모드 종료
+  void _exitPositioningMode() {
+    setState(() {
+      _isInPositioningMode = false;
+      _tempNote = null;
+      _hideBottomToolbar = false; // 하단바 복원
+    });
   }
 
   void _zoomIn() {
@@ -323,5 +363,23 @@ class _GraffitiWallScreenState extends State<GraffitiWallScreen> {
         duration: Duration(seconds: 1),
       ),
     );
+  }
+
+  // 위치 선택 모드 핸들러들
+  void _handlePositioningConfirm(GraffitiNote finalNote) async {
+    _exitPositioningMode();
+    
+    await _addNoteToRepository(finalNote);
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('낙서가 추가되었습니다! 🎨'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _handlePositioningCancel() {
+    _exitPositioningMode();
   }
 }
