@@ -14,8 +14,13 @@ import '../widgets/relative_drag_positioning_mode.dart';
 
 class GraffitiWallScreen extends StatefulWidget {
   final GraffitiRepository repository;
+  final dynamic selectedWall; // Wall entity or null for default behavior
 
-  const GraffitiWallScreen({super.key, required this.repository});
+  const GraffitiWallScreen({
+    super.key, 
+    required this.repository,
+    this.selectedWall,
+  });
 
   @override
   State<GraffitiWallScreen> createState() => _GraffitiWallScreenState();

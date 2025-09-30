@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 
-/// Bottom toolbar with action buttons
+/// Enhanced bottom toolbar with action buttons and wall management navigation
 class BottomToolbar extends StatelessWidget {
   final VoidCallback onAddGraffiti;
   final VoidCallback onZoomIn;
   final VoidCallback onZoomOut;
   final VoidCallback onResetView;
   final VoidCallback onRefresh;
+  final VoidCallback? onWallList;
+  final VoidCallback? onWallInfo;
+  final String? currentWallName;
 
   const BottomToolbar({
     super.key,
@@ -15,29 +18,149 @@ class BottomToolbar extends StatelessWidget {
     required this.onZoomOut,
     required this.onResetView,
     required this.onRefresh,
+    this.onWallList,
+    this.onWallInfo,
+    this.currentWallName,
   });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Container(
-      height: 80,
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            offset: const Offset(0, -2),
+            blurRadius: 8,
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          _buildToolButton(Icons.add, Colors.black, onAddGraffiti),        // 낙서 추가
-          _buildToolButton(Icons.zoom_in, Colors.black, onZoomIn),         // 확대
-          _buildToolButton(Icons.zoom_out, Colors.black, onZoomOut),       // 축소
-          _buildToolButton(Icons.pan_tool, Colors.black, onResetView),     // 뷰 리셋
-          _buildToolButton(Icons.refresh, Colors.black, onRefresh),        // 새로고침
+          // Wall info banner (when wall is selected)
+          if (currentWallName != null) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer,
+                border: Border(
+                  bottom: BorderSide(
+                    color: theme.colorScheme.outline.withOpacity(0.2),
+                  ),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.location_city,
+                    size: 16,
+                    color: theme.colorScheme.onPrimaryContainer,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      currentWallName!,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onPrimaryContainer,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (onWallInfo != null) ...[
+                    GestureDetector(
+                      onTap: onWallInfo,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        child: Icon(
+                          Icons.info_outline,
+                          size: 16,
+                          color: theme.colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+
+          // Main toolbar
+          Container(
+            height: 80,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                // Wall management section
+                if (onWallList != null) ...[
+                  _buildToolButton(
+                    Icons.location_on,
+                    theme.colorScheme.primary,
+                    onWallList!,
+                    tooltip: '담벼락 목록',
+                  ),
+                  const SizedBox(width: 12),
+                ],
+
+                // Main actions section
+                Expanded(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildToolButton(
+                        Icons.add,
+                        Colors.black,
+                        onAddGraffiti,
+                        tooltip: '낙서 추가',
+                      ),
+                      _buildToolButton(
+                        Icons.zoom_in,
+                        Colors.black,
+                        onZoomIn,
+                        tooltip: '확대',
+                      ),
+                      _buildToolButton(
+                        Icons.zoom_out,
+                        Colors.black,
+                        onZoomOut,
+                        tooltip: '축소',
+                      ),
+                      _buildToolButton(
+                        Icons.pan_tool,
+                        Colors.black,
+                        onResetView,
+                        tooltip: '뷰 리셋',
+                      ),
+                      _buildToolButton(
+                        Icons.refresh,
+                        Colors.black,
+                        onRefresh,
+                        tooltip: '새로고침',
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildToolButton(IconData icon, Color iconColor, VoidCallback onPressed) {
-    return GestureDetector(
+  Widget _buildToolButton(
+    IconData icon,
+    Color iconColor,
+    VoidCallback onPressed, {
+    String? tooltip,
+  }) {
+    Widget button = GestureDetector(
       onTap: onPressed,
       child: Container(
         width: 50,
@@ -49,7 +172,7 @@ class BottomToolbar extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.1),
-              offset: Offset(0, 2),
+              offset: const Offset(0, 2),
               blurRadius: 4,
             ),
           ],
@@ -57,5 +180,14 @@ class BottomToolbar extends StatelessWidget {
         child: Icon(icon, color: iconColor, size: 24),
       ),
     );
+
+    if (tooltip != null) {
+      return Tooltip(
+        message: tooltip,
+        child: button,
+      );
+    }
+
+    return button;
   }
 }

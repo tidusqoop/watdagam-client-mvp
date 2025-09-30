@@ -738,10 +738,10 @@ class SyncService {
 - [x] Enhance graffiti display logic
 
 #### Days 3-4: Wall Management
-- [ ] Implement wall discovery logic
-- [ ] Add access permission system
-- [ ] Create wall list UI
-- [ ] Update bottom toolbar
+- [x] Implement wall discovery logic
+- [x] Add access permission system
+- [x] Create wall list UI
+- [x] Update bottom toolbar
 
 #### Day 5: Integration and Testing
 - [ ] Integration testing
